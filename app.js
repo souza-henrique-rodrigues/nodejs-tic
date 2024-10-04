@@ -1,19 +1,21 @@
 const http = require("http");
-const fs = require("fs");
+const fs = require("node:fs/promises");
 
-const message = "Escrevendo arquivo vid FS module";
-
-fs.writeFileSync("./mensagem.txt", message, "utf-8", (error) => {
-  if (error) {
-    console.log("error");
+const writeFile = async () => {
+  try {
+    const message = "Escrevend outro arquivo de forma assincrona agora";
+    await fs.writeFile("./mensagem2.txt", message, "utf-8");
+  } catch (error) {
+    console.error(error);
   }
-  console.log("Fille writen sucessfully");
-});
+};
+
+writeFile();
 
 const server = http.createServer((req, res) => {
   try {
     res.writeHead(200, { "Content-type": "text/plain" });
-    res.end("text");
+    res.end("texto");
   } catch (error) {
     res.writeHead(500);
     res.end("Erro interno servidor");
