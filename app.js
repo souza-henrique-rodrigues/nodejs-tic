@@ -10,7 +10,17 @@ const writeFile = async () => {
   }
 };
 
+const readingFile = async () => {
+  try {
+    const mensagem = await fs.readFile("./mensagem2", "utf-8");
+    console.log(mensagem);
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 writeFile();
+readingFile();
 
 const server = http.createServer((req, res) => {
   try {
