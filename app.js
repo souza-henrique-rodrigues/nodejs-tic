@@ -1,40 +1,41 @@
-const http = require("http");
-const fs = require("node:fs/promises");
+import http from "http";
+import fs from "fs";
+import rota from "./routes.js";
 
-const writeFile = async () => {
-  try {
-    const message = "Escrevend outro arquivo de forma assincrona agora";
-    await fs.writeFile("./mensagem2.txt", message, "utf-8");
-  } catch (error) {
-    console.error(error);
+fs.writeFile(
+  "mensagem.txt",
+  "documento criado a partir do FS",
+  "utf-8",
+  (error) => {
+    if (error) {
+      console.log("Erro durante escrita");
+      return;
+    }
+    console.log("Sucesso durante escrita");
   }
-};
+);
 
-const readingFile = async () => {
-  try {
-    const mensagem = await fs.readFile("./mensagem2", "utf-8");
-    console.log(mensagem);
-  } catch (error) {
-    console.error(error);
+fs.readFile("mensagem.txt", "utf-8", (erro, conteudo) => {
+  if (erro) {
+    console.log("ERRO");
+    return;
   }
-};
-
-writeFile();
-readingFile();
-
-const server = http.createServer((req, res) => {
-  try {
-    res.writeHead(200, { "Content-type": "text/plain" });
-    res.end("texto");
-  } catch (error) {
-    res.writeHead(500);
-    res.end("Erro interno servidor");
-  }
+  console.log("sucesso durante leitura");
+  startServer(conteudo);
 });
 
-host = "localhost";
-port = 3000;
+const startServer = (conteudo) => {
+  const server = http.createServer((req, res) => {
+    rota(req, res, { conteudo });
+  });
 
-server.listen(port, host, () => {
-  console.log(`App rodando na porta ${port}:${host}`);
-});
+  const hostname = "localhost";
+  const PORT = 3000;
+
+  server.listen(PORT, hostname, (error) => {
+    if (error) {
+      console.log("erro no servidor", error);
+    }
+    console.log(`App running on port ${PORT}:${hostname}`);
+  });
+};
