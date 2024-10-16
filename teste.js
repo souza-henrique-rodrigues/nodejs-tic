@@ -1,3 +1,1 @@
-() => {
-  hi;
-};
+//texto vazio
