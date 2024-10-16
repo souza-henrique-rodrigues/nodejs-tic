@@ -121,36 +121,35 @@ export default function rota(req, res, dado) {
           };
 
           res.end(JSON.stringify(resposta));
+          return;
         }
-        return;
-      });
+        fs.appendFile(
+          `${arquivo.nome}.txt`,
+          `${arquivo.conteudo}`,
+          "utf8",
+          (erro) => {
+            if (erro) {
+              console.log("Erro ao escrever o", erro);
+              res.statusCode = 500;
+              const resposta = {
+                erro: {
+                  mensagem: "Erro ao criar arquivo",
+                },
+              };
+              res.end(JSON.stringify(resposta));
+              return;
+            }
+            res.statusCode = 201;
 
-      fs.appendFile(
-        `${arquivo.nome}.txt`,
-        `${arquivo.conteudo}`,
-        "utf8",
-        (erro) => {
-          if (erro) {
-            console.log("Erro ao escrever o", erro);
-            res.statusCode = 500;
             const resposta = {
-              erro: {
-                mensagem: "Erro ao criar arquivo",
-              },
+              mensagem: `arquivo ${arquivo.nome} atualizado com sucesso`,
             };
+
             res.end(JSON.stringify(resposta));
             return;
           }
-          res.statusCode = 201;
-
-          const resposta = {
-            mensagem: `arquivo ${arquivo.nome} atualizado com sucesso`,
-          };
-
-          res.end(JSON.stringify(resposta));
-          return;
-        }
-      );
+        );
+      });
     });
     req.on("error", (error) => {
       console.log(`Falha ao processar a requisição, erro ${error}`);
@@ -179,7 +178,7 @@ export default function rota(req, res, dado) {
     req.on("end", () => {
       const arquivo = JSON.parse(corpo);
 
-      fs.unlink(`${arquivo.nome}.txt`, (erro) => {
+      fs.rm(`${arquivo.nome}.txt`, (erro) => {
         if (erro) {
           req.statusCode = erro.code === "ENOENT" ? 404 : 403;
 
@@ -195,7 +194,7 @@ export default function rota(req, res, dado) {
         req.statusCode = 200;
         const resposta = {
           sucessos: {
-            mensagem: `O arquivo ${arquivo.nome} foi excluido com sucesso`,
+            mensagem: `O arquivo '${arquivo.nome}' foi excluido com sucesso`,
           },
         };
         res.end(JSON.stringify(resposta));
