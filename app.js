@@ -1,6 +1,16 @@
 import http from "http";
 import fs from "fs";
 import rota from "./routes.js";
+import sqlite from "sqlite3";
+import { sequelize } from "./models.js";
+
+const db = new sqlite.Database("./loja.db", (erro) => {
+  if (erro) {
+    console.log("Erro ao conectar ao bando de dados");
+    return;
+  }
+  console.log("Sucesso ao inicializar conexão");
+});
 
 fs.writeFile(
   "mensagem.txt",
@@ -24,7 +34,8 @@ fs.readFile("mensagem.txt", "utf-8", (erro, conteudo) => {
   startServer(conteudo);
 });
 
-const startServer = (conteudo) => {
+const startServer = async (conteudo) => {
+  await sequelize.sync();
   const server = http.createServer((req, res) => {
     rota(req, res, { conteudo });
   });
