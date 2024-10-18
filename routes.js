@@ -1,7 +1,6 @@
-import fs from "fs";
-import { atualizarProdutoId, criarProduto, sequelize } from "./models.js";
+import { atualizarProdutoId, criarProduto, deletaProdutoId, sequelize, visualizarProdutos } from "./models.js";
 
-export default function rota(req, res, dado) {
+export default async function rota(req, res, dado) {
   res.setHeader("Content-Type", "application/json", "utf-8");
 
   if (req.method === "GET" && req.url === "/") {
@@ -23,7 +22,7 @@ export default function rota(req, res, dado) {
     });
 
     req.on("end", async () => {
-      const arquivo = JSON.parse(corpo);
+      const produto = JSON.parse(corpo);
       res.statusCode = 400;
 
       if (!produto?.nome) {
@@ -51,24 +50,22 @@ export default function rota(req, res, dado) {
         res.statusCode = 201;
 
         const resposta = {
-          mensagem: `arquivo criado ${produto.nome}`,
+          mensagem: `produto criado ${produto.nome}`,
         };
 
         res.end(JSON.stringify(resposta));
         return;
       } catch (erro) {
-        (erro) => {
-          if (erro) {
-            res.statusCode = 500;
-            const resposta = {
-              erro: {
-                mensagem: "Erro ao criar arquivo",
-              },
-            };
-            res.end(JSON.stringify(resposta));
-            return;
-          }
-        };
+        if (erro) {
+          res.statusCode = 500;
+          const resposta = {
+            erro: {
+              mensagem: "Erro ao criar produto",
+            },
+          };
+          res.end(JSON.stringify(resposta));
+          return;
+        }
       }
     });
     req.on("error", (error) => {
@@ -88,11 +85,8 @@ export default function rota(req, res, dado) {
   }
 
   //codigo para alterar txt
-  if (
-    req.method === "PATCH" &&
-    req.url.split("/")[1] === "arquivos" &&
-    !isNaN(req.url.split("/")[2])
-  ) {
+  if (req.method === "PATCH" && req.url.split("/")[1] === "produtos" && !isNaN(req.url.split("/")[2])) {
+    const id = req.url.split("/")[2];
     const corpo = [];
 
     req.on("data", (parte) => {
@@ -100,14 +94,13 @@ export default function rota(req, res, dado) {
     });
 
     req.on("end", async () => {
-      const arquivo = JSON.parse(corpo);
+      const produto = JSON.parse(corpo);
       res.statusCode = 400;
 
       if (!produto?.nome && !produto.preco) {
         const resposta = {
           erro: {
-            mensagem:
-              "Ao menos um dos valores é necessário para atualizar produto : Nome ou preço",
+            mensagem: "Ao menos um dos valores é necessário para atualizar produto : Nome ou preço",
           },
         };
         res.end(JSON.stringify(resposta));
@@ -115,28 +108,26 @@ export default function rota(req, res, dado) {
       }
 
       try {
-        const produtoAtualizado = await atualizarProdutoId();
+        const produtoAtualizado = await atualizarProdutoId(id, produto);
         res.statusCode = 201;
 
         const resposta = {
-          mensagem: `arquivo ${arquivo.nome} atualizado com sucesso`,
+          mensagem: `produto ${produto.nome} atualizado com sucesso`,
         };
 
         res.end(JSON.stringify(resposta));
         return;
       } catch {
-        if (erro) {
-          req.statusCode = erro.code === "ENOENT" ? 404 : 403;
+        req.statusCode = 500;
 
-          const resposta = {
-            erro: {
-              mensagem: "Error ao tentar atualizar produto",
-            },
-          };
+        const resposta = {
+          erro: {
+            mensagem: "Error ao tentar atualizar produto",
+          },
+        };
 
-          res.end(JSON.stringify(resposta));
-          return;
-        }
+        res.end(JSON.stringify(resposta));
+        return;
       }
     });
     req.on("error", (error) => {
@@ -156,40 +147,49 @@ export default function rota(req, res, dado) {
   }
 
   //codigo para excluir txt
+  if (req.method === "DELETE" && req.url.split("/")[1] === "produtos" && !isNaN(req.url.split("/")[2])) {
+    const id = req.url.split("/")[2];
 
-  if (req.method === "DELETE" && req.url === "/arquivos") {
-    const corpo = [];
-    req.on("data", (parte) => {
-      corpo.push(parte);
-    });
+    try {
+      await deletaProdutoId(id);
+      req.statusCode = 204;
+      res.end();
+      return;
+    } catch (erro) {
+      req.statusCode = 500;
+      const resposta = {
+        error: {
+          mensagemErro: "Erro ao tentar excluir produto",
+        },
+      };
+      res.end(JSON.stringify(resposta));
+      return;
+    }
+  }
 
-    req.on("end", () => {
-      const arquivo = JSON.parse(corpo);
+  if (req.method === "GET" && req.url.split("/")[1] === "produtos" && !isNaN(req.url.split("/")[2])) {
+    const id = req.url.split("/")[2];
 
-      fs.rm(`${arquivo.nome}.txt`, (erro) => {
-        if (erro) {
-          req.statusCode = erro.code === "ENOENT" ? 404 : 403;
+    try {
+      const produto = await visualizarProdutoid(id);
+      req.statusCode = 200;
 
-          const resposta = {
-            error: {
-              mensagemErro: "Erro ao tentar excluir arquivo",
-            },
-          };
-          res.end(JSON.stringify(resposta));
-          return;
-        }
+      const resposta = {
+        mensagem: `produto ${produto.nome} envidado com sucesso`,
+      };
 
-        req.statusCode = 200;
-        const resposta = {
-          sucessos: {
-            mensagem: `O arquivo '${arquivo.nome}' foi excluido com sucesso`,
-          },
-        };
-        res.end(JSON.stringify(resposta));
-        return;
-      });
-    });
-    return;
+      res.end(JSON.stringify(resposta));
+      return;
+    } catch (erro) {
+      req.statusCode = 500;
+      const resposta = {
+        error: {
+          mensagemErro: "Erro ao visualizar produto",
+        },
+      };
+      res.end(JSON.stringify(resposta));
+      return;
+    }
   }
 
   res.statusCode = 404;
